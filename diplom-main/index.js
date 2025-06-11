@@ -87,9 +87,9 @@ app.post("/api/orders", (req, res) => {
     delivery: req.body.delivery,
     address: req.body.address,
     payment_method: req.body.payment_method,
-    comment: req.body.comment,
+    comment: req.body.comment || '', // Устанавливаем пустую строку, если комментарий не указан
     user_id: userId,
-    status: "new", // Добавляем статус "new" для новых заказов
+    status: "new",
   };
 
   // Проверяем обязательные поля
@@ -110,6 +110,24 @@ app.post("/api/orders", (req, res) => {
   if (orderData.delivery === "delivery" && !orderData.address) {
     return res.json({ success: false, message: "Укажите адрес доставки" });
   }
+
+  // Проверяем поля в зависимости от способа оплаты
+  if (orderData.payment_method === "card") {
+    if (!req.body.card_number || !req.body.card_expiry || !req.body.card_cvv) {
+      return res.json({
+        success: false,
+        message: "Заполните все поля банковской карты",
+      });
+    }
+  } else if (orderData.payment_method === "wallet") {
+    if (!req.body.wallet_number || !req.body.wallet_holder) {
+      return res.json({
+        success: false,
+        message: "Заполните все поля онлайн-кошелька",
+      });
+    }
+  }
+  // Для оплаты наличными (cash) дополнительных полей не требуется
 
   // Получаем товары из корзины
   db.all("SELECT * FROM cart WHERE user_id = ?", [userId], (err, cartItems) => {

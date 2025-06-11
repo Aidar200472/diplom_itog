@@ -974,92 +974,6 @@ function updateCheckoutSummary() {
     });
 }
 
-// Обработчик отправки формы заказа
-document
-  .getElementById("checkout-form")
-  .addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    // Получаем данные формы
-    const formData = {
-      full_name: document.getElementById("name").value.trim(),
-      phone: document.getElementById("phone").value.trim(),
-      email: document.getElementById("email").value.trim(),
-      delivery: document.querySelector('input[name="delivery"]:checked').value,
-      address: document.getElementById("address").value.trim(),
-      payment_method: document.querySelector('input[name="payment"]:checked')
-        .value,
-      comment: document.getElementById("comments").value.trim(),
-    };
-
-    // Добавляем данные в зависимости от способа оплаты
-    if (formData.payment_method === "card") {
-      formData.card_number = document
-        .getElementById("card-number")
-        .value.trim();
-      formData.card_expiry = document
-        .getElementById("card-expiry")
-        .value.trim();
-      formData.card_cvv = document.getElementById("card-cvv").value.trim();
-    } else if (formData.payment_method === "wallet") {
-      formData.wallet_number = document
-        .getElementById("wallet-number")
-        .value.trim();
-      formData.wallet_holder = document
-        .getElementById("wallet-holder")
-        .value.trim();
-    }
-
-    // Валидация формы
-    if (!validateCheckoutForm(formData)) {
-      return;
-    }
-
-    // Отправляем заказ на сервер
-    fetch("/api/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          // Закрываем модальное окно оформления заказа
-          document.getElementById("checkout-modal").style.display = "none";
-
-          // Показываем модальное окно успешного оформления
-          const successModal = document.getElementById("order-success-modal");
-          document.getElementById("order-number").textContent = data.orderId;
-          successModal.style.display = "block";
-
-          // Очищаем корзину
-          clearCart();
-
-          // Обработчик закрытия окна успеха
-          successModal.querySelector(".close").onclick = function () {
-            successModal.style.display = "none";
-          };
-
-          // Обработчик кнопки "Продолжить покупки"
-          successModal.querySelector(".continue-shopping-btn").onclick =
-            function () {
-              successModal.style.display = "none";
-            };
-        } else {
-          showNotification(
-            data.message || "Ошибка при оформлении заказа",
-            "error"
-          );
-        }
-      })
-      .catch((error) => {
-        console.error("Error submitting order:", error);
-        showNotification("Ошибка при оформлении заказа", "error");
-      });
-  });
-
 // Функция валидации формы заказа
 function validateCheckoutForm(formData) {
   // Проверка обязательных полей
@@ -1100,6 +1014,7 @@ function validateCheckoutForm(formData) {
 
   // Проверка полей в зависимости от способа оплаты
   if (formData.payment_method === "card") {
+    // Проверяем поля карты только если выбран способ оплаты картой
     if (!formData.card_number || !formData.card_expiry || !formData.card_cvv) {
       showNotification(
         "Пожалуйста, заполните все поля банковской карты",
@@ -1108,6 +1023,7 @@ function validateCheckoutForm(formData) {
       return false;
     }
   } else if (formData.payment_method === "wallet") {
+    // Проверяем поля кошелька только если выбран способ оплаты кошельком
     if (!formData.wallet_number || !formData.wallet_holder) {
       showNotification(
         "Пожалуйста, заполните все поля онлайн-кошелька",
@@ -1116,6 +1032,7 @@ function validateCheckoutForm(formData) {
       return false;
     }
   }
+  // Для оплаты наличными (cash) дополнительных полей не требуется
 
   return true;
 }
@@ -1161,11 +1078,27 @@ document.querySelectorAll('input[name="payment"]').forEach((radio) => {
     cardFields.style.display = "none";
     walletFields.style.display = "none";
 
+    // Отключаем обязательные поля для всех методов оплаты
+    document.querySelectorAll('#card-payment-fields input').forEach(input => {
+      input.required = false;
+    });
+    document.querySelectorAll('#wallet-payment-fields input').forEach(input => {
+      input.required = false;
+    });
+
     // Показываем нужные поля в зависимости от выбранного способа оплаты
     if (this.value === "card") {
       cardFields.style.display = "block";
+      // Делаем поля карты обязательными
+      document.querySelectorAll('#card-payment-fields input').forEach(input => {
+        input.required = true;
+      });
     } else if (this.value === "wallet") {
       walletFields.style.display = "block";
+      // Делаем поля кошелька обязательными
+      document.querySelectorAll('#wallet-payment-fields input').forEach(input => {
+        input.required = true;
+      });
     }
   });
 });
@@ -1284,3 +1217,89 @@ window.handleRemoveItem = async function (productId) {
     showNotification("Ошибка при удалении товара", "error");
   }
 };
+
+// Обработчик отправки формы заказа
+document
+  .getElementById("checkout-form")
+  .addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    // Получаем данные формы
+    const formData = {
+      full_name: document.getElementById("name").value.trim(),
+      phone: document.getElementById("phone").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      delivery: document.querySelector('input[name="delivery"]:checked').value,
+      address: document.getElementById("address").value.trim(),
+      payment_method: document.querySelector('input[name="payment"]:checked')
+        .value,
+      comment: document.getElementById("comments").value.trim(),
+    };
+
+    // Добавляем данные в зависимости от способа оплаты
+    if (formData.payment_method === "card") {
+      formData.card_number = document
+        .getElementById("card-number")
+        .value.trim();
+      formData.card_expiry = document
+        .getElementById("card-expiry")
+        .value.trim();
+      formData.card_cvv = document.getElementById("card-cvv").value.trim();
+    } else if (formData.payment_method === "wallet") {
+      formData.wallet_number = document
+        .getElementById("wallet-number")
+        .value.trim();
+      formData.wallet_holder = document
+        .getElementById("wallet-holder")
+        .value.trim();
+    }
+
+    // Валидация формы
+    if (!validateCheckoutForm(formData)) {
+      return;
+    }
+
+    // Отправляем заказ на сервер
+    fetch("/api/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Закрываем модальное окно оформления заказа
+          document.getElementById("checkout-modal").style.display = "none";
+
+          // Показываем модальное окно успешного оформления
+          const successModal = document.getElementById("order-success-modal");
+          document.getElementById("order-number").textContent = data.orderId;
+          successModal.style.display = "block";
+
+          // Очищаем корзину
+          clearCart();
+
+          // Обработчик закрытия окна успеха
+          successModal.querySelector(".close").onclick = function () {
+            successModal.style.display = "none";
+          };
+
+          // Обработчик кнопки "Продолжить покупки"
+          successModal.querySelector(".continue-shopping-btn").onclick =
+            function () {
+              successModal.style.display = "none";
+            };
+        } else {
+          showNotification(
+            data.message || "Ошибка при оформлении заказа",
+            "error"
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error submitting order:", error);
+        showNotification("Ошибка при оформлении заказа", "error");
+      });
+  });
