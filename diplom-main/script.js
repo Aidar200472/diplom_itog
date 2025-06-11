@@ -767,9 +767,8 @@ if (registerPhoneInput) {
 
 // Функция для обновления интерфейса после входа
 function updateUIAfterLogin(user) {
-  console.log("UPDATE UI AFTER LOGIN:", user);
   const loginLink = document.getElementById("login-link");
-  const nav = document.querySelector("nav .container ul");
+  const nav = loginLink.closest("ul");
 
   if (loginLink && nav) {
     console.log("REMOVING LOGIN LINK");
@@ -788,7 +787,7 @@ function updateUIAfterLogin(user) {
     const cartLi = document.createElement("li");
     cartLi.innerHTML = `
       <a href="#" id="cart-link">
-        <i class="fas fa-shopping-cart"></i> Корзина
+        <i class="fas fa-shopping-cart"></i> Корзина <span class="cart-count">0</span>
       </a>
     `;
 
@@ -922,33 +921,74 @@ function updateUIAfterLogin(user) {
         }
       });
     }
+
+    // Обновляем количество товаров в корзине
+    updateCartCount();
   } else {
     console.log("LOGIN LINK OR NAV NOT FOUND:", { loginLink, nav });
   }
 }
 
-// Функция для отображения модального окна оформления заказа
+// Функция для показа модального окна оформления заказа
 function showCheckoutModal() {
   const modal = document.getElementById("checkout-modal");
   const closeBtn = modal.querySelector(".close");
+  const form = document.getElementById("checkout-form");
 
-  // Обновляем информацию о заказе
-  updateCheckoutSummary();
+  if (modal) {
+    // Получаем данные пользователя
+    fetch("/api/user")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Заполняем поля данными пользователя
+          document.getElementById("name").value = data.user.full_name || '';
+          document.getElementById("phone").value = data.user.phone || '';
+          document.getElementById("email").value = data.user.email || '';
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching user data:", error);
+      });
 
-  // Показываем модальное окно
-  modal.style.display = "block";
+    modal.style.display = "block";
+    updateCheckoutSummary();
 
-  // Обработчик закрытия
-  closeBtn.onclick = function () {
-    modal.style.display = "none";
-  };
+    // Функция очистки формы
+    const clearForm = () => {
+      if (form) {
+        form.reset();
+        // Сбрасываем способ оплаты на карту (по умолчанию)
+        const cardRadio = document.querySelector('input[name="payment"][value="card"]');
+        if (cardRadio) {
+          cardRadio.checked = true;
+          // Вызываем событие change для обновления отображения полей
+          cardRadio.dispatchEvent(new Event('change'));
+        }
+        // Сбрасываем способ доставки на доставку (по умолчанию)
+        const deliveryRadio = document.querySelector('input[name="delivery"][value="delivery"]');
+        if (deliveryRadio) {
+          deliveryRadio.checked = true;
+          // Вызываем событие change для обновления отображения полей
+          deliveryRadio.dispatchEvent(new Event('change'));
+        }
+      }
+    };
 
-  // Закрытие по клику вне модального окна
-  window.onclick = function (event) {
-    if (event.target == modal) {
+    // Обработчик закрытия по кнопке
+    closeBtn.onclick = function () {
       modal.style.display = "none";
-    }
-  };
+      clearForm();
+    };
+
+    // Закрытие по клику вне модального окна
+    window.onclick = function (event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+        clearForm();
+      }
+    };
+  }
 }
 
 // Функция обновления информации о заказе в модальном окне
