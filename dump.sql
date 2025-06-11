@@ -1,0 +1,55 @@
+CREATE TABLE IF NOT EXISTS "user" (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    email TEXT NOT NULL,
+    password TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS category (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS manufacturer (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS product (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    image TEXT NOT NULL,
+    info TEXT NOT NULL,
+    price INTEGER NOT NULL,
+    characteristic TEXT NOT NULL,
+    category_id INTEGER NOT NULL REFERENCES category(id),
+    manufacturer_id INTEGER NOT NULL REFERENCES manufacturer(id)
+);
+
+CREATE TABLE IF NOT EXISTS "order" (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    email TEXT NOT NULL,
+    delivery TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES "user"(id),
+    "address" TEXT,
+    payment_method TEXT NOT NULL,
+    comment TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'new',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER NOT NULL REFERENCES "order"(id),
+    product_id INTEGER NOT NULL REFERENCES product(id),
+    price INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cart (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES "user"(id),
+    product_id INTEGER NOT NULL REFERENCES product(id)
+);

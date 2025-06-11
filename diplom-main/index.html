@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ТехноМир - магазин бытовой техники. Широкий ассортимент холодильников, стиральных машин, телевизоров и другой техники от ведущих производителей."
+    />
+    <meta
+      name="keywords"
+      content="бытовая техника, холодильники, стиральные машины, телевизоры, техника для дома, купить технику"
+    />
+    <meta name="author" content="ТехноМир" />
+    <meta name="robots" content="index, follow" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://via.placeholder.com/32x32?text=T"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://via.placeholder.com/16x16?text=T"
+      sizes="16x16"
+    />
+    <title>ТехноМир - Магазин бытовой техники</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div class="logo">
+          <h1>ТехноМир</h1>
+          <p>Ваш надежный магазин бытовой техники</p>
+        </div>
+        <div class="header-right">
+          <div class="search">
+            <input type="text" placeholder="Поиск товаров..." />
+            <button class="clear-search" title="Очистить поиск">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="cart-icon" id="cart-icon">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="cart-count">0</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <nav>
+      <div class="container">
+        <ul>
+          <li><a href="#" class="active" data-category="all">Главная</a></li>
+          <li><a href="#contacts">Контакты</a></li>
+          <li><a href="#" id="login-link">Войти</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="container">
+      <aside class="sidebar">
+        <div class="categories">
+          <h3>Категории</h3>
+          <ul hx-get="/api/categories" hx-trigger="load">
+            <li>
+              <a
+                href="#"
+                class="category-link active"
+                data-category="all"
+                hx-get="/api/products"
+                hx-target="#products-container"
+                hx-indicator="#loading"
+                hx-trigger="click"
+                onclick="event.preventDefault(); document.querySelectorAll('.category-link').forEach(link => link.classList.remove('active')); this.classList.add('active');"
+                >Все товары</a
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="brands">
+          <h3>Производители</h3>
+          <ul hx-get="/api/manufacturers" hx-trigger="load">
+            <!-- Производители будут загружены через HTMX -->
+          </ul>
+        </div>
+      </aside>
+      <div class="main-content">
+        <div id="loading" class="loading-indicator" style="display: none">
+          <div class="spinner"></div>
+          <p>Загрузка...</p>
+        </div>
+        <div
+          id="products-container"
+          class="product-grid"
+          hx-get="/api/products"
+          hx-trigger="load"
+        >
+          <!-- Товары будут загружены через HTMX -->
+        </div>
+      </div>
+    </main>
+
+    <div class="modal" id="product-modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="loading" class="loading-spinner" style="display: none"></div>
+        <div class="modal-product-details" id="modal-product-details">
+          <!-- Информация о товаре будет загружена через JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="cart-modal">
+      <div class="modal-content cart-modal-content">
+        <span class="close">&times;</span>
+        <h2>Корзина</h2>
+        <div class="cart-header">
+          <div class="cart-column product-info-header">Товар</div>
+          <div class="cart-column quantity-header">Количество</div>
+          <div class="cart-column price-header">Цена</div>
+          <div class="cart-column total-header">Сумма</div>
+        </div>
+        <div class="cart-items" id="cart-items">
+          <!-- Товары в корзине будут загружены через JS -->
+        </div>
+        <div class="cart-summary">
+          <div class="cart-summary-details">
+            <div class="summary-row">
+              <span>Товаров в корзине:</span>
+              <span id="cart-items-count">0</span>
+            </div>
+            <div class="summary-row">
+              <span>Общая сумма:</span>
+              <span id="cart-total" class="cart-total">0 ₽</span>
+            </div>
+          </div>
+          <button class="checkout-btn" id="checkout-btn">Оформить заказ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="checkout-modal">
+      <div class="modal-content checkout-modal-content">
+        <span class="close">&times;</span>
+        <h2>Оформление заказа</h2>
+        <div class="checkout-summary">
+          <div class="summary-header">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Ваш заказ</span>
+          </div>
+          <div class="summary-details">
+            <div class="summary-row">
+              <span>Товаров в корзине:</span>
+              <span id="checkout-items-count">0</span>
+            </div>
+            <div class="summary-row total">
+              <span>Итого к оплате:</span>
+              <span id="checkout-total">0 ₽</span>
+            </div>
+          </div>
+        </div>
+        <form id="checkout-form">
+          <div class="form-section">
+            <h3>Контактные данные</h3>
+            <div class="form-group">
+              <label for="name">ФИО <span class="required">*</span></label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                placeholder="Иванов Иван Иванович"
+              />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="phone"
+                  >Телефон <span class="required">*</span></label
+                >
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  required
+                  placeholder="+7 (___) ___-__-__"
+                />
+              </div>
+              <div class="form-group">
+                <label for="email">Email <span class="required">*</span></label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  placeholder="example@mail.ru"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Способ получения</h3>
+            <div class="delivery-options">
+              <label class="radio-card">
+                <input type="radio" name="delivery" value="delivery" checked />
+                <div class="radio-card-content">
+                  <i class="fas fa-truck"></i>
+                  <div class="radio-card-text">
+                    <h4>Доставка</h4>
+                    <p>Доставка курьером до двери</p>
+                  </div>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="delivery" value="pickup" />
+                <div class="radio-card-content">
+                  <i class="fas fa-store"></i>
+                  <div class="radio-card-text">
+                    <h4>Самовывоз</h4>
+                    <p>Из магазина</p>
+                  </div>
+                </div>
+              </label>
+            </div>
+            <div id="delivery-address" class="form-group">
+              <label for="address"
+                >Адрес доставки <span class="required">*</span></label
+              >
+              <input
+                type="text"
+                id="address"
+                name="address"
+                required
+                placeholder="Город, улица, дом, квартира"
+              />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Способ оплаты</h3>
+            <div class="payment-options">
+              <label class="radio-card">
+                <input type="radio" name="payment" value="card" checked />
+                <div class="radio-card-content">
+                  <i class="fas fa-credit-card"></i>
+                  <div class="radio-card-text">
+                    <h4>Банковская карта</h4>
+                    <p>Visa, MasterCard, МИР</p>
+                  </div>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="payment" value="wallet" />
+                <div class="radio-card-content">
+                  <i class="fas fa-wallet"></i>
+                  <div class="radio-card-text">
+                    <h4>Онлайн-кошелек</h4>
+                    <p>ЮMoney, QIWI, WebMoney</p>
+                  </div>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="payment" value="cash" />
+                <div class="radio-card-content">
+                  <i class="fas fa-money-bill-wave"></i>
+                  <div class="radio-card-text">
+                    <h4>Наличными</h4>
+                    <p>При получении</p>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Поля для банковской карты -->
+            <div id="card-payment-fields" style="display: none">
+              <div class="form-group">
+                <label for="card-number">Номер карты</label>
+                <input
+                  type="text"
+                  id="card-number"
+                  name="card-number"
+                  placeholder="0000 0000 0000 0000"
+                  maxlength="19"
+                  pattern="[0-9\s]*"
+                  inputmode="numeric"
+                  required
+                />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="card-expiry">Срок действия</label>
+                  <input
+                    type="text"
+                    id="card-expiry"
+                    name="card-expiry"
+                    placeholder="MM/YY"
+                    maxlength="5"
+                    pattern="[0-9/]*"
+                    inputmode="numeric"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="card-cvv">CVV</label>
+                  <input
+                    type="password"
+                    id="card-cvv"
+                    name="card-cvv"
+                    placeholder="***"
+                    maxlength="3"
+                    inputmode="numeric"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Поля для онлайн-кошелька -->
+            <div
+              id="wallet-payment-fields"
+              class="payment-fields"
+              style="display: none"
+            >
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="wallet-number"
+                    >Номер <span class="required">*</span></label
+                  >
+                  <input
+                    type="text"
+                    id="wallet-number"
+                    placeholder="Введите номер кошелька"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="wallet-holder"
+                    >ФИО держателя <span class="required">*</span></label
+                  >
+                  <input
+                    type="text"
+                    id="wallet-holder"
+                    placeholder="Введите ФИО держателя"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-group">
+              <label for="comments">Комментарий к заказу</label>
+              <textarea
+                id="comments"
+                name="comments"
+                rows="3"
+                placeholder="Дополнительная информация по заказу"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="checkout-footer">
+            <p class="required-note">
+              <span class="required">*</span> - обязательные поля
+            </p>
+            <button type="submit" class="submit-order-btn">
+              <span>Подтвердить заказ</span>
+              <span id="checkout-total-btn">0 ₽</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="order-success-modal">
+      <div class="modal-content success-modal-content">
+        <span class="close">&times;</span>
+        <div class="success-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h2>Заказ оформлен успешно!</h2>
+        <p>
+          Спасибо за ваш заказ. Наш менеджер свяжется с вами в ближайшее время
+          для подтверждения.
+        </p>
+        <p>Номер вашего заказа: <strong id="order-number"></strong></p>
+        <button class="continue-shopping-btn">Продолжить покупки</button>
+      </div>
+    </div>
+
+    <div class="modal" id="login-modal">
+      <div class="modal-content login-modal-content">
+        <span class="close">&times;</span>
+        <h2>Авторизация</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-phone">Номер телефона</label>
+            <input
+              type="tel"
+              id="login-phone"
+              required
+              placeholder="+7 (___) ___-__-__"
+            />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Пароль</label>
+            <div class="password-input">
+              <input
+                type="password"
+                id="login-password"
+                required
+                placeholder="Введите ваш пароль"
+              />
+              <button type="button" class="toggle-password">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="login-btn">Войти</button>
+          </div>
+          <div class="register-link">
+            <p>
+              Нет аккаунта?
+              <a href="#" id="show-register">Зарегистрироваться</a>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="register-modal">
+      <div class="modal-content register-modal-content">
+        <span class="close">&times;</span>
+        <h2>Регистрация</h2>
+        <form id="register-form">
+          <div class="form-group">
+            <label for="register-name">ФИО</label>
+            <input
+              type="text"
+              id="register-name"
+              required
+              placeholder="Иванов Иван Иванович"
+            />
+          </div>
+          <div class="form-group">
+            <label for="register-phone">Номер телефона</label>
+            <input
+              type="tel"
+              id="register-phone"
+              required
+              placeholder="+7 (___) ___-__-__"
+            />
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <input
+              type="email"
+              id="register-email"
+              required
+              placeholder="example@mail.ru"
+            />
+          </div>
+          <div class="form-group">
+            <label for="register-password">Пароль</label>
+            <div class="password-input">
+              <input
+                type="password"
+                id="register-password"
+                required
+                placeholder="Минимум 8 символов"
+              />
+              <button type="button" class="toggle-password">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-password-confirm">Подтверждение пароля</label>
+            <div class="password-input">
+              <input
+                type="password"
+                id="register-password-confirm"
+                required
+                placeholder="Повторите пароль"
+              />
+              <button type="button" class="toggle-password">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" required />
+              <span
+                >Я согласен с <a href="#">условиями использования</a> и
+                <a href="#">политикой конфиденциальности</a></span
+              >
+            </label>
+          </div>
+          <button type="submit" class="register-btn">Зарегистрироваться</button>
+          <div class="login-link">
+            <p>Уже есть аккаунт? <a href="#" id="show-login">Войти</a></p>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="profile-modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Профиль пользователя</h2>
+        <div class="profile-info">
+          <div class="profile-field">
+            <label>Имя:</label>
+            <span id="profile-name"></span>
+          </div>
+          <div class="profile-field">
+            <label>Email:</label>
+            <span id="profile-email"></span>
+          </div>
+          <div class="profile-field">
+            <label>Телефон:</label>
+            <span id="profile-phone"></span>
+          </div>
+        </div>
+        <button class="order-history-btn" id="show-order-history">
+          История заказов
+        </button>
+        <button class="logout-btn" id="logout-btn">Выйти</button>
+      </div>
+    </div>
+
+    <div class="modal" id="order-history-modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>История заказов</h2>
+        <div class="order-history-list" id="order-history-list">
+          <!-- История заказов будет загружена через JS -->
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="container">
+        <div class="footer-section">
+          <h3>О магазине</h3>
+          <p>
+            ТехноМир - это современный магазин бытовой техники с широким
+            ассортиментом товаров от ведущих мировых производителей.
+          </p>
+        </div>
+        <div class="footer-section" id="contacts">
+          <h3>Контакты</h3>
+          <p>
+            <i class="fas fa-map-marker-alt"></i> г. Тюмень, 50 лет ВЛКСМ, 43
+          </p>
+          <p><i class="fas fa-phone"></i> +7 (495) 123-45-67</p>
+          <p><i class="fas fa-envelope"></i> info@technomir.ru</p>
+        </div>
+        <div class="footer-section">
+          <h3>Время работы</h3>
+          <p>Пн-Пт: 9:00 - 21:00</p>
+          <p>Сб-Вс: 10:00 - 20:00</p>
+        </div>
+        <div class="footer-section">
+          <h3>Мы в соцсетях</h3>
+          <div class="social-icons">
+            <a href="#"><i class="fab fa-vk"></i></a>
+            <a href="#"><i class="fab fa-telegram"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
+          </div>
+        </div>
+      </div>
+      <div class="copyright">
+        <p>&copy; 2025 ТехноМир. Все права защищены.</p>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
